@@ -1,0 +1,145 @@
+<!-- 
+
+#---------------------------------------------------------------
+# Dashboard.html
+# Reads predictions from verdicts.jsonl.
+#	•	Displays a live table of transactions, fraud verdicts (from verdicts.jsonl), and model agreement.
+#	•	Refreshes every 10 seconds.
+#	•	Uses Bootstrap 5 for a clean UI and fraud color coding.
+# 
+# May 2025 
+# Srikanth Devarajan, Hands on - Learning from home :) 
+#
+#
+#---------------------------------------------------------------
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>FraudOps Dashboard</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      body {
+        background-color: #f2f4f8;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+      .header {
+        background-color: #004977;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+      }
+      .summary-box {
+        background: #ffffff;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+      .table-wrapper {
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 0.5rem;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: #f2f4f8;
+        z-index: 1;
+      }
+    </style>
+    <meta http-equiv="refresh" content="10" />
+  </head>
+  <body>
+    <div class="container my-4">
+      <div class="header mb-4">
+        <h3 class="m-0">🚨 Real-Time Fraud Detection Dashboard</h3>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="summary-box">
+            🧾 Total Transactions: {{ transactions|length }}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-box text-danger">
+            🔴 Both Models: FRAUD<br />
+            {{ transactions|selectattr("LogisticRegression", "equalto",
+            "FRAUD")|selectattr("XGBoost", "equalto", "FRAUD")|list|length }}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-box text-warning">
+            ⚠️ Model Disagreements<br />
+            {{ transactions|selectattr("LogisticRegression", "ne",
+            "XGBoost")|list|length }}
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="summary-box text-success">
+            ✅ Both Models: NOT FRAUD<br />
+            {{ transactions|selectattr("LogisticRegression", "equalto", "NOT
+            FRAUD")|list|selectattr("XGBoost", "equalto", "NOT
+            FRAUD")|list|length }}
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="table table-sm table-hover table-bordered mb-0">
+          <thead class="text-dark">
+            <tr>
+              <th>Txn ID</th>
+              <th>Time</th>
+              <th>Amount</th>
+              <th>Merchant</th>
+              <th>Country</th>
+              <th>Method</th>
+              <th>Hour</th>
+              <th>Logistic</th>
+              <th>XGBoost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for txn in transactions|reverse %} {% set log_flag =
+            txn.LogisticRegression %} {% set xgb_flag = txn.XGBoost %} {% if
+            log_flag == "FRAUD" and xgb_flag == "FRAUD" %} {% set row_class =
+            "table-danger" %} {% elif log_flag == "NOT FRAUD" and xgb_flag ==
+            "NOT FRAUD" %} {% set row_class = "table-success" %} {% else %} {%
+            set row_class = "table-warning" %} {% endif %}
+
+            <tr class="{{ row_class }}">
+              <td>{{ txn.transaction_id }}</td>
+              <td>{{ txn.timestamp }}</td>
+              <td>${{ txn.transaction_amount }}</td>
+              <td>{{ txn.merchant_category }}</td>
+              <td>{{ txn.merchant_country }}</td>
+              <td>{{ txn.payment_method }}</td>
+              <td>{{ txn.transaction_hour }}</td>
+              <td>{{ log_flag }}</td>
+              <td>{{ xgb_flag }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+
+<!-- # DISCLAIMER: THIS PROJECT IS PROVIDED FOR DEMONSTRATION PURPOSES ONLY. # IT
+USES SYNTHETIC DATA AND SIMPLIFIED ASSUMPTIONS NOT SUITABLE FOR PRODUCTION USE.
+# ALL MODELS, CODE, AND OUTPUTS ARE SHARED AS-IS, WITHOUT ANY WARRANTY OR
+GUARANTEE OF ACCURACY. # USE AT YOUR OWN RISK. -->
